@@ -17,7 +17,8 @@
 use crate::kurbo::{Point, Rect, Size};
 
 use crate::{
-    BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, PaintCtx, UpdateCtx, Widget, WidgetPod,
+    BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    UpdateCtx, Widget, WidgetPod,
 };
 
 /// A builder for a row widget that can contain flex children.
@@ -153,6 +154,12 @@ impl<T: Data> Widget<T> for Flex<T> {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut T, env: &Env) {
         for child in &mut self.children {
             child.widget.event(ctx, event, data, env);
+        }
+    }
+
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &T, env: &Env) {
+        for child in &mut self.children {
+            child.widget.lifecycle(ctx, event, data, env);
         }
     }
 

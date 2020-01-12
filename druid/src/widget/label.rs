@@ -21,8 +21,8 @@ use crate::piet::{
 };
 use crate::theme;
 use crate::{
-    BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, LocalizedString, PaintCtx, UpdateCtx,
-    Widget,
+    BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
+    LocalizedString, PaintCtx, UpdateCtx, Widget,
 };
 
 /// The text for the label
@@ -123,6 +123,8 @@ impl<T: Data> Widget<T> for Label<T> {
             ctx.invalidate();
         }
     }
+
+    fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, _event: &LifeCycle, _data: &T, _env: &Env) {}
 
     fn layout(
         &mut self,
