@@ -75,7 +75,7 @@ use crate::{
 };
 
 /// A unique identifier for a single widget.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq)]
 pub struct WidgetId(u32);
 
 /// The trait implemented by all widgets.
