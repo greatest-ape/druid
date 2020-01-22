@@ -624,8 +624,12 @@ impl<'a> WinCtx<'a> for WinCtxImpl<'a> {
     }
 
     fn request_timer(&mut self, deadline: std::time::Instant) -> TimerToken {
-        let interval = time_interval_from_deadline(deadline);
-        let token = next_timer_id();
+        let interval = deadline
+            .checked_duration_since(std::time::Instant::now())
+            .unwrap_or_default()
+            .as_millis() as u32;
+
+        let token = TimerToken::next();
 
         let handle = self.handle.clone();
 
@@ -633,14 +637,13 @@ impl<'a> WinCtx<'a> for WinCtxImpl<'a> {
             if let Some(state) = handle.state.upgrade() {
                 if let Ok(mut handler_borrow) = state.handler.try_borrow_mut() {
                     let mut ctx = WinCtxImpl::from(&handle);
-                    handler_borrow.timer(TimerToken::new(token), &mut ctx);
+                    handler_borrow.timer(token, &mut ctx);
                     return false;
                 }
             }
             true
         });
-
-        TimerToken::new(token)
+        token
     }
 }
 
@@ -651,21 +654,6 @@ impl<'a> From<&'a WindowHandle> for WinCtxImpl<'a> {
             text: Text::new(),
         }
     }
-}
-
-fn time_interval_from_deadline(deadline: std::time::Instant) -> u32 {
-    let now = std::time::Instant::now();
-    if now >= deadline {
-        0
-    } else {
-        (deadline - now).as_millis() as u32
-    }
-}
-
-fn next_timer_id() -> usize {
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    static TIMER_ID: AtomicUsize = AtomicUsize::new(1);
-    TIMER_ID.fetch_add(1, Ordering::Relaxed)
 }
 
 fn make_gdk_cursor(cursor: &Cursor, gdk_window: &gdk::Window) -> Option<gdk::Cursor> {
