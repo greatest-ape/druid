@@ -27,9 +27,8 @@ pub struct IdentityWrapper<W> {
 
 impl<W> IdentityWrapper<W> {
     /// Assign an identity to a widget.
-    pub fn wrap(inner: W) -> (WidgetId, IdentityWrapper<W>) {
-        let id = WidgetId::next();
-        (id, IdentityWrapper { id, inner })
+    pub fn wrap(inner: W, id: WidgetId) -> IdentityWrapper<W> {
+        IdentityWrapper { id, inner }
     }
 }
 
@@ -57,12 +56,13 @@ impl<T: Data, W: Widget<T>> Widget<T> for IdentityWrapper<W> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widget::{Label, WidgetExt};
+    use crate::widget::{Label, WidgetExt, WidgetId};
     use crate::Color;
 
     #[test]
     fn test_nesting() {
-        let (id, label) = IdentityWrapper::wrap(Label::<u32>::new("howdy there friend"));
+        let id = WidgetId::next();
+        let label = IdentityWrapper::wrap(Label::<u32>::new("howdy there friend"), id);
         let wrapped_up: Box<dyn Widget<u32>> =
             Box::new(label.padding(5.0).align_left().background(Color::BLACK));
 
