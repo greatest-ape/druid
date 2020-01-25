@@ -129,6 +129,63 @@ impl WindowBuilder {
         self.menu = Some(menu);
     }
 
+    /// Create a view (not an actual platform window) and attach to a parent view.
+    ///
+    /// This method is useful when embedding into an existing app, or writing a VST
+    /// plug-in. It is unsafe because the parent_view handle must be valid.
+    ///
+    /// On macOS, the parent_view is an NSView object.
+    pub fn attach(self, parent: *mut ::std::os::raw::c_void) -> Result<WindowHandle, Error> {        // Note: some of this is duplicated with `build`, perhaps dedup.
+        let parent_view: id = parent as id;
+
+        if Self::id_is_instance_of(parent_view, "NSView"){
+            unsafe {
+                info!("attach");
+                let (view, idle_queue) = make_view(self.handler.expect("view"));
+                let content_view = parent_view;
+                let frame = NSView::frame(content_view);
+
+                view.initWithFrame_(frame);
+                let () = msg_send!(view, setFrameSize: frame.size);
+
+                let window_id: id = msg_send![content_view, window];
+                let () = msg_send![window_id, setDelegate: view];
+
+                content_view.addSubview_(view);
+                let view_state: *mut c_void = *(*view).get_ivar("viewState");
+                let view_state = &mut *(view_state as *mut ViewState);
+                let handle = WindowHandle {
+                    nsview: view_state.nsview.clone(),
+                    idle_queue,
+                };
+                (*view_state).handler.connect(&handle.clone().into());
+                let mut ctx = WinCtxImpl {
+                    nsview: &handle.nsview,
+                    text: Text::new(),
+                };
+                (*view_state).handler.connected(&mut ctx);
+                (*view_state)
+                    .handler
+                    .size(frame.size.width as u32, frame.size.height as u32, &mut ctx);
+
+                Ok(handle)
+            }
+        } else {
+            // TODO: handle this case. Pointer might be a NSWindow (according
+            // to rtb-rs repository) which could still be still useful.
+            error!("parent pointer is not an NSView");
+            return Err(Error::Other("parent pointer is not an NSView"));
+        }
+    }
+
+    // From https://github.com/rust-dsp/rtb-rs/blob/master/src/platform/cocoa/util.rs
+    pub fn id_is_instance_of(id: id, classname: &'static str) -> bool {
+        let is_instance: BOOL = unsafe {
+            msg_send![id, isKindOfClass: objc::runtime::Class::get(classname).expect("class to exist")]
+        };
+        is_instance == YES
+    }
+
     pub fn build(self) -> Result<WindowHandle, Error> {
         assert_main_thread();
         unsafe {

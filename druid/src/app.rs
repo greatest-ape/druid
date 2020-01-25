@@ -110,6 +110,27 @@ impl<T: Data> AppLauncher<T> {
         main_loop.run();
         Ok(())
     }
+
+    /// Build the windows and attach to parent window
+    ///
+    /// Returns an error if a window cannot be instantiated. This is usually
+    /// a fatal error.
+    pub fn attach_and_launch(mut self, parent: *mut ::std::os::raw::c_void, data: T) -> Result<(), PlatformError> {
+        Application::init();
+        let mut env = theme::init();
+        if let Some(f) = self.env_setup.take() {
+            f(&mut env, &data);
+        }
+
+        let state = AppState::new(data, env, self.delegate.take());
+
+        for desc in self.windows {
+            let window = desc.build_native_attach(parent, &state)?;
+            window.show();
+        }
+
+        Ok(())
+    }
 }
 
 impl<T: Data> WindowDesc<T> {
@@ -189,6 +210,43 @@ impl<T: Data> WindowDesc<T> {
             .add_window(self.id, Window::new(root, title, menu));
 
         builder.build()
+    }
+
+    /// Attempt to build a platform window from this `WindowDesc` and attach to
+    /// parent window.
+    pub(crate) fn build_native_attach(
+        &self,
+        parent: *mut ::std::os::raw::c_void,
+        state: &Rc<RefCell<AppState<T>>>,
+    ) -> Result<WindowHandle, PlatformError> {
+        let mut title = self
+            .title
+            .clone()
+            .unwrap_or_else(|| LocalizedString::new("app-name"));
+        title.resolve(&state.borrow().data, &state.borrow().env);
+        let mut menu = self.menu.to_owned();
+        let platform_menu = menu
+            .as_mut()
+            .map(|m| m.build_window_menu(&state.borrow().data, &state.borrow().env));
+
+        let handler = DruidHandler::new_shared(state.clone(), self.id);
+
+        let mut builder = WindowBuilder::new();
+        builder.set_handler(Box::new(handler));
+        if let Some(size) = self.size {
+            builder.set_size(size);
+        }
+        builder.set_title(title.localized_str());
+        if let Some(menu) = platform_menu {
+            builder.set_menu(menu);
+        }
+
+        let root = (self.root_builder)();
+        state
+            .borrow_mut()
+            .add_window(self.id, Window::new(root, title, menu));
+
+        builder.attach(parent)
     }
 
     /// Set the menu for this window.

@@ -183,7 +183,16 @@ impl WindowBuilder {
     pub fn build(self) -> Result<WindowHandle, Error> {
         self.0.build().map(WindowHandle).map_err(Into::into)
     }
+
+    /// Attempt to attach to parent window
+    pub fn attach(
+        self,
+        parent: *mut ::std::os::raw::c_void,
+    ) -> Result<WindowHandle, Error> {
+        self.0.attach(parent).map(WindowHandle).map_err(Into::into)
+    }
 }
+
 
 /// A context supplied to most `WinHandler` methods.
 pub trait WinCtx<'a> {
