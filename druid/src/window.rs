@@ -22,7 +22,7 @@ use crate::kurbo::{Point, Rect, Size};
 use crate::shell::WindowHandle;
 use crate::{
     BoxConstraints, Command, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    LocalizedString, MenuDesc, PaintCtx, UpdateCtx, Widget, WidgetPod,
+    LocalizedString, MenuDesc, PaintCtx, UpdateCtx, Widget, WidgetId, WidgetPod,
 };
 
 /// A unique identifier for a window.
@@ -41,6 +41,7 @@ pub struct Window<T: Data> {
     pub(crate) last_anim: Option<Instant>,
     pub(crate) needs_inval: bool,
     pub(crate) children_changed: bool,
+    pub(crate) focus: Option<WidgetId>,
     // delegate?
 }
 
@@ -59,6 +60,7 @@ impl<T: Data> Window<T> {
             last_anim: None,
             needs_inval: false,
             children_changed: false,
+            focus: None,
         }
     }
 
