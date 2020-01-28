@@ -33,7 +33,7 @@ static WINDOW_ID_COUNTER: AtomicU32 = AtomicU32::new(1);
 /// Per-window state not owned by user code.
 pub struct Window<T: Data> {
     pub(crate) root: WidgetPod<T, Box<dyn Widget<T>>>,
-    pub(crate) title: LocalizedString<T>,
+    pub(crate) title: Option<LocalizedString<T>>,
     size: Size,
     pub(crate) menu: Option<MenuDesc<T>>,
     pub(crate) context_menu: Option<MenuDesc<T>>,
@@ -43,7 +43,7 @@ pub struct Window<T: Data> {
 impl<T: Data> Window<T> {
     pub fn new(
         root: impl Widget<T> + 'static,
-        title: LocalizedString<T>,
+        title: Option<LocalizedString<T>>,
         menu: Option<MenuDesc<T>>,
     ) -> Window<T> {
         Window {
@@ -84,8 +84,10 @@ impl<T: Data> Window<T> {
     }
 
     pub(crate) fn update_title(&mut self, win_handle: &WindowHandle, data: &T, env: &Env) {
-        if self.title.resolve(data, env) {
-            win_handle.set_title(self.title.localized_str());
+        if let Some(title) = self.title.as_mut() {
+            if title.resolve(data, env) {
+                win_handle.set_title(title.localized_str());
+            }
         }
     }
 
