@@ -116,7 +116,6 @@ impl<T: Data> AppLauncher<T> {
     /// Returns an error if a window cannot be instantiated. This is usually
     /// a fatal error.
     pub fn attach_and_launch(mut self, parent: *mut ::std::os::raw::c_void, data: T) -> Result<(), PlatformError> {
-        Application::init();
         let mut env = theme::init();
         if let Some(f) = self.env_setup.take() {
             f(&mut env, &data);
